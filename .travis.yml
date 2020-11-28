@@ -4,6 +4,6 @@ jobs:
   include:
     - stage: build docker image
       script:
-      - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      - echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
       - docker build -t setevoy/nginx-example:${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} .
       - docker push setevoy/nginx-example:${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT}
