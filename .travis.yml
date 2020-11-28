@@ -2,8 +2,19 @@ dist: trusty
 
 jobs:
   include:
-    - stage: build docker image
+    - stage: Build Docker image
       script:
-      - echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-      - docker build -t setevoy/nginx-example:${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} .
-      - docker push setevoy/nginx-example:${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT}
+        - echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+        - docker build -t setevoy/nginx-example:${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} .
+        - docker push setevoy/nginx-example:${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT}
+    - stage: Deploy to ArgoCD
+      before_script:
+        - VERSION=$(curl --silent "https://api.github.com/repos/argoproj/argo-cd/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+        - curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/$VERSION/argocd-linux-amd64
+        - chmod +x /usr/local/bin/argocd
+      script:
+        - argocd login --username "$ARGOCD_USER" --password "$ARGOCD_PASS" "$ARGOCD_HOST"
+        - argocd app set --helm-set image.repository=setevoy/nginx-example --helm-set image.tag=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} test-helm-chart-deployment
+        - argocd app sync test-helm-chart-deployment
+        - argocd app wait --sync test-helm-chart-deployment
+        - argocd app get test-helm-chart-deployment --show-params
