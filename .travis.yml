@@ -10,8 +10,9 @@ jobs:
     - stage: Deploy to ArgoCD
       before_script:
         - VERSION=$(curl --silent "https://api.github.com/repos/argoproj/argo-cd/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
-        - curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/$VERSION/argocd-linux-amd64
-        - chmod +x /usr/local/bin/argocd
+        - wget https://github.com/argoproj/argo-cd/releases/download/$VERSION/argocd-linux-amd64 -O argocd
+        - chmod +x argocd
+        - PATH=$PATH:$PWD/
       script:
         - argocd login --username "$ARGOCD_USER" --password "$ARGOCD_PASS" "$ARGOCD_HOST"
         - argocd app set --helm-set image.repository=setevoy/nginx-example --helm-set image.tag=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} test-helm-chart-deployment
